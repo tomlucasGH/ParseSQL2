@@ -1,0 +1,39 @@
+﻿@model IEnumerable<ParseSQL2.Models.QueryMaster>
+
+@{
+    ViewBag.Title = "Index";
+}
+
+<h2>Index</h2>
+
+@foreach (var item in Model)
+{
+<div>
+    <h4>QueryMaster</h4>
+    <hr />
+
+    
+        <h3>
+         ID: @Html.DisplayFor(ModelItem=>item.ID)
+        </h3>   
+        
+         <h3>
+          QueryText:  @Html.DisplayFor(ModelItem => item.QueryText)
+        </h3>
+
+
+        <h3>
+          CustomerID:  @Html.DisplayFor(ModelItem => item.customerid)
+        </h3>
+        @Html.ActionLink("Edit", "Edit", new {id=item.ID }) |
+        @Html.ActionLink("Delete", "Delete", new { id = item.ID }) |
+
+</div>
+}
+<p>
+
+    @Html.ActionLink("Back to List", "Index")
+    </p>
+<p>
+    @Html.ActionLink("Create New", "Create")
+</p>
