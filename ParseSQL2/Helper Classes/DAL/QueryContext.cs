@@ -15,6 +15,13 @@ namespace ParseSQL2.DAL
            Database.SetInitializer<QueryContext>(new CreateDatabaseIfNotExists<QueryContext>());
         }
         public DbSet<QueryMaster> Query { get; set; }
+        public DbSet<TableList> Tables { get; set; }
+
+        public DbSet<SelectColumns> columnlist { get; set; }
+        public DbSet<WhereClause> whereclause { get; set; }
+
+        public DbSet<ColumnIdentifiers>columnidentifiers { get; set; }
+
     }
 }
 

@@ -5,6 +5,7 @@ using System.Web;
 using System.Web.Mvc;
 using ParseSQL2.Models;
 using ParseSQL2.DAL;
+using Helpers;
 
 
 namespace ParseSQL2.Controllers
@@ -49,9 +50,56 @@ namespace ParseSQL2.Controllers
                 query.customerid = Convert.ToInt32(collection[2]);
                 context.Query.Add(query);
                 context.SaveChanges();
+
+                Parser parser = new Parser();
+
+                List<Parser.outputstruct> tablelist = Parser.GetTableNamesFromQueryString(query.QueryText);
+                foreach(Parser.outputstruct n in tablelist)
+                {
+                    TableList table = new TableList();
+                    table.TableName = n.Table;
+                    table.owner = n.Owner;
+                    table.AliasName = n.Alias;
+                    table.queryID = query.ID;
+                    context.Tables.Add(table);
+                }
+                context.SaveChanges();
+                List<Parser.columnstruct> columnlist = Parser.FindColumns(query.QueryText);
+                foreach(Parser.columnstruct n in columnlist)
+                {
+                    SelectColumns columns = new SelectColumns();
+                    var tbl =
+             from c in context.Tables
+              where c.queryID == query.ID && 
+              (c.AliasName.Replace("[","").Replace("]","") == n.Alias || c.TableName.Replace("[","").Replace("]","") == n.Alias)
+              select  c.TableName;
+
+                    if (tbl.Count() > 0)
+                    {
+                        columns.QueryID = query.ID;
+                        columns.TableName = tbl.First().ToString();
+                        columns.ColumnName = n.Column;
+                        context.columnlist.Add(columns);
+                    }
+                    }
+                context.SaveChanges();
+
+                List<Parser.wherestruct> whereclauseList = Parser.GetFilterCriteriaFromQueryString(query.QueryText, tablelist);
+                foreach(Parser.wherestruct n in whereclauseList)
+                {
+                    WhereClause whereclauseClass = new WhereClause();
+                    whereclauseClass.ColumnName = n.Column;
+                    whereclauseClass.comparison_operator = n.comparison_operator;
+                    whereclauseClass.comparison_value = n.comparison_value;
+                    whereclauseClass.TableName = n.Table;
+                    whereclauseClass.QueryID = query.ID;
+                    context.whereclause.Add(whereclauseClass);
+                }
+                context.SaveChanges();
                 return RedirectToAction("Index");
+
             }
-            catch
+            catch (Exception ex)
             {
                 return View();
             }
