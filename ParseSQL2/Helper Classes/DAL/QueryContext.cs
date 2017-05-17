@@ -21,6 +21,8 @@ namespace ParseSQL2.DAL
         public DbSet<WhereClause> whereclause { get; set; }
 
         public DbSet<ColumnIdentifiers>columnidentifiers { get; set; }
+        public DbSet<datasources> datasources { get; set; }
+
 
     }
 }

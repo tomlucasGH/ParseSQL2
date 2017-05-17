@@ -93,6 +93,10 @@ namespace ParseSQL2.Controllers
                     whereclauseClass.comparison_value = n.comparison_value;
                     whereclauseClass.TableName = n.Table;
                     whereclauseClass.QueryID = query.ID;
+                    whereclauseClass.function_string = n.function_string;
+                    whereclauseClass.function_name = n.function_name;
+
+
                     context.whereclause.Add(whereclauseClass);
                 }
                 context.SaveChanges();
@@ -154,6 +158,37 @@ namespace ParseSQL2.Controllers
                 context.SaveChanges();
                 // TODO: Add delete logic here
 
+                return RedirectToAction("Index");
+            }
+            catch
+            {
+                return View();
+            }
+        }
+        // GET: Default/Execute
+        public ActionResult Add_source()
+        {
+            var source = context.datasources.ToList();
+            return View(source);
+        }
+        [HttpGet]
+        public ActionResult Create_source()
+        {
+                 return View();
+        }
+        [HttpPost]
+        public ActionResult Create_source(FormCollection collection)
+        {
+            try
+            {
+                datasources sources = new datasources();
+                sources.type = collection[1].ToString();
+                sources.connection = collection[2].ToString();
+                sources.name = collection[3].ToString();
+                context.datasources.Add(sources);
+                context.SaveChanges();
+                // TODO: Add execute logic here
+                //datasources sources = context.datasources.Find(id);
                 return RedirectToAction("Index");
             }
             catch

@@ -1,0 +1,33 @@
+﻿@model IEnumerable<ParseSQL2.Models.datasources>
+
+@{
+    ViewBag.Title = "Execute";
+}
+
+<h2>Execute</h2>
+
+
+    <h4>datasources</h4>
+    <hr />
+@foreach (var item in Model)
+{
+    <div>
+        <h3>
+         Item Type:   @Html.DisplayFor(ModelItem => item.type)
+        </h3>
+
+        <h3>
+         Item Connection:   @Html.DisplayFor(ModelItem => item.connection)
+        </h3>
+
+        <h3>
+         Item Name:   @Html.DisplayFor(ModelItem => item.name)
+        </h3>
+
+</div>
+}
+
+<p>
+    @Html.ActionLink("Add New Source", "Create_source")
+    @Html.ActionLink("Back to List", "Index")
+</p>

@@ -63,6 +63,8 @@ namespace Helpers
                             outputdata.Column = null;
                             outputdata.comparison_operator = null;
                             outputdata.comparison_value = null;
+                            outputdata.function_name = null;
+                            outputdata.function_string = null;
                         }
                         //Identify individual search arguments
                         for (var j = i + 1; j < queryTokens.Count; j++)
@@ -71,7 +73,82 @@ namespace Helpers
                             {
                                 break;
                             }
-                            //Reached end of WHERE query if reached the GROUP BY or ORDER BY clauses
+
+                            //if function used, need to get whole function call
+                            if (queryTokens[j].Text == "(")
+                            {
+                                int start = j - 1;
+                                int end = j + 1;
+
+                                bool _continue = false;
+                                while (queryTokens[start].Text != outputdata.comparison_operator)
+                                {
+                                    //looking for quoted identifier "" or [] so that if we see a space in the middle, continue on and don't break out
+                                    if (queryTokens[start].Text == "\"" || queryTokens[start].Text == "[" || queryTokens[start].Text == "]")
+                                        if (_continue == false)
+                                        {
+                                            _continue = true;
+                                        }
+                                        else
+                                        {
+                                            _continue = false;
+                                        }
+                                    if (queryTokens[start].Text == " " && _continue == false)
+                                    {
+                                        break;
+                                    }
+
+                                    start += -1;
+
+                                }
+                                _continue = false;
+                                while (end < queryTokens.Count || !ComparisonOperators.Contains(queryTokens[end].TokenType) )
+                                {
+                                    //looking for quoted identifier "" or [] so that if we see a space in the middle, continue on and don't break out
+                                    if (queryTokens[end].Text == "\"" || queryTokens[end].Text == "[" || queryTokens[end].Text == "]")
+                                        if (_continue == false)
+                                        {
+                                            _continue = true;
+                                        }
+                                        else
+                                        {
+                                            _continue = false;
+                                        }
+                                    if (queryTokens[end].Text == " " && _continue == false)
+                                    {
+                                        break;
+                                    }
+
+                                    end += 1;
+                                }
+                                string _result = "";
+                                for (i = start + 1; i < end; i++)
+                                {
+                                    _result = _result + queryTokens[i].Text;
+                                }
+                                outputdata.function_string = _result;
+                                if (_result.Contains("."))
+                                {
+                                    QueryContext context = new QueryContext();
+                                    string[] _temp = _result.Split('.');
+                                    string alias = getNestedColumn(_temp[0], "reverse");
+
+                                    var tbl =
+                                    from c in context.Tables
+                                    join _query in context.Query
+                                    on c.queryID equals _query.ID
+                                    where _query.QueryText == query
+                                    && (c.AliasName.Replace("[", "").Replace("]", "") == alias
+                                    || c.TableName.Replace("[", "").Replace("]", "") == alias)
+                                    select c.TableName;
+
+                                    outputdata.Table = tbl.First().ToString();
+                                   outputdata.Column = getNestedColumn(_temp[1], "forward");
+                                }
+                            j = end;
+        }
+    
+                           //Reached end of WHERE query if reached the GROUP BY or ORDER BY clauses
                             if (queryTokens[j].Text.ToUpper() == "GROUP" || queryTokens[j].Text.ToUpper() == "ORDER" || queryTokens[j].Text.ToUpper() == "AND")
                             {
                                 break;
@@ -136,22 +213,26 @@ namespace Helpers
 
                                 //If match identifiertokentype, this is user supplied value, so must be value being compared to
                                 //logic assumes that a user supplied value with "." is alias.column.  If no "." included, must be a search value
-                                if (identifierTokenTypes.Contains(queryTokens[j].TokenType))
+                                if (identifierTokenTypes.Contains(queryTokens[j].TokenType) && outputdata.comparison_operator != null)
                                 {
-                                    if (outputdata.comparison_value != null)
+                                    /* if (outputdata.comparison_value != null)
+                                     {
+                                         outputdata.comparison_value = String.Concat(outputdata.comparison_value, ",", queryTokens[j].Text);
+                                     }
+                                     else
+                                     {
+                                         outputdata.comparison_value = queryTokens[j].Text;
+                                     }
+                                     */
+                                    while (queryTokens[j].Text != " " && queryTokens[j].Text != null)
                                     {
-                                        outputdata.comparison_value = String.Concat(outputdata.comparison_value, ",", queryTokens[j].Text);
-                                    }
-                                    else
-                                    {
-                                        outputdata.comparison_value = queryTokens[j].Text;
+                                        outputdata.comparison_value += queryTokens[j].Text;
+                                        j += 1;
                                     }
                                 }
-
                             }
-
                         }
-
+                        
                     }
                 }
             }
@@ -164,6 +245,8 @@ namespace Helpers
                 outputdata.Column = null;
                 outputdata.comparison_operator = null;
                 outputdata.comparison_value = null;
+                outputdata.function_name = null;
+                outputdata.function_string = null;
             }
             return output;
 
@@ -172,23 +255,34 @@ namespace Helpers
         {
             columnstruct column = new columnstruct();
             List<columnstruct> columnlist = new List<columnstruct>();
-
-            string[] columns = query.Split(' ');
-            foreach (string n in columns)
-            {
-                string val = n.Replace(",", "");
-                if (n.Contains(" "))
+            int position;
+            int start;
+            int end;
+            string word;
+            while (query.Contains("."))
                 {
-                    val = n.Substring(n.IndexOf(" ") + 1);
+                position = query.IndexOf(".");
+                start = query.IndexOf(" ");
+                if (start<0  || start> position)
+                {
+                    start = 0;
                 }
-                if (val.Contains("."))
+                query = query.Substring(start+1);
+                end = query.IndexOf(" ");
+                if (end == -1)
                 {
-                    string[] output = val.Split('.');
-                    column.Alias = getNestedColumn(output[0],"reverse");
-                    column.Column = getNestedColumn(output[1],"forward");
+                    
+                    end = query.Length;
+                }
+                word = query.Substring(0, end);
+                if (word.Contains("."))
+                {
+                    string[] output = word.Split('.');
+                    column.Alias = getNestedColumn(output[0], "reverse");
+                    column.Column = getNestedColumn(output[1], "forward");
                     columnlist.Add(column);
                 }
-
+                query = query.Substring(end);
             }
             return columnlist;
         }
@@ -364,6 +458,8 @@ namespace Helpers
             public string Column;
             public string comparison_operator;
             public string comparison_value;
+            public string function_name;
+            public string function_string;
         }
         public struct columnstruct
         {
@@ -386,7 +482,7 @@ namespace Helpers
                 default: throw new ArgumentException("Error: expected TokenType of token should be TSqlTokenType.Dot, TSqlTokenType.Identifier, or TSqlTokenType.QuotedIdentifier");
             }
         }
-        private static string getNestedColumn(String column, string direction)
+        public static string getNestedColumn(String column, string direction)
         {
             string output = "";
             bool _continue = true;

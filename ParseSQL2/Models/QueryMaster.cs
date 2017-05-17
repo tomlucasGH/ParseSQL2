@@ -55,6 +55,8 @@ namespace ParseSQL2.Models
         public string ColumnName { get; set; }
         public string comparison_operator { get; set; }
         public string comparison_value { get; set; }
+        public string function_string { get; set; }
+        public string function_name { get; set; }
     }
     public class ColumnIdentifiers
     {
@@ -63,5 +65,14 @@ namespace ParseSQL2.Models
         public int ID { get; set; }
         public int asciistart { get; set; }
         public int asciiend { get; set; }
+    }
+    public class datasources
+    {
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        [Key]
+        public int ID { get; set; }
+        public string type { get; set; }
+        public string connection { get; set; }
+        public string name { get; set; }
     }
 }
